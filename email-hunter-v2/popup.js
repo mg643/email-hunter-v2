@@ -1,0 +1,145 @@
+// popup.js — Email Hunter v2
+
+const STORAGE_EMAILS = 'storedEmails';
+const STORAGE_DISABLE_COLLECT = 'disableCollectEmails';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function $(id) { return document.getElementById(id); }
+
+function setCount(elId, emails) {
+  const n = emails.length;
+  $(elId).textContent = `${n} email${n !== 1 ? 's' : ''}`;
+}
+
+function setButtons(ids, disabled) {
+  ids.forEach(id => { $(id).disabled = disabled; });
+}
+
+function toCSV(emails) {
+  return 'email\n' + emails.join('\n');
+}
+
+function download(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).catch(() => {
+    // Fallback for older contexts
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+  });
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    btn.classList.add('active');
+    $(`tab-${btn.dataset.tab}`).classList.remove('hidden');
+
+    if (btn.dataset.tab === 'all') loadAllEmails();
+  });
+});
+
+// ── Page emails ───────────────────────────────────────────────────────────────
+
+let pageEmails = [];
+
+async function loadPageEmails() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) return;
+
+  let response;
+  try {
+    response = await chrome.tabs.sendMessage(tab.id, { method: 'getEmails' });
+  } catch (_) {
+    $('page-emails').placeholder = 'Cannot access this page (restricted URL).';
+    return;
+  }
+
+  pageEmails = response?.emails ?? [];
+
+  // Merge with any previously stored for this session
+  const { [STORAGE_EMAILS]: stored = [] } = await chrome.storage.local.get(STORAGE_EMAILS);
+  const merged = [...new Set([...stored, ...pageEmails])];
+
+  // Store accumulated
+  const { [STORAGE_DISABLE_COLLECT]: disabled } = await chrome.storage.local.get(STORAGE_DISABLE_COLLECT);
+  if (!disabled) {
+    await chrome.storage.local.set({ [STORAGE_EMAILS]: merged });
+  }
+
+  renderPageEmails(pageEmails);
+}
+
+function renderPageEmails(emails) {
+  $('page-emails').value = emails.join('\n');
+  setCount('page-count', emails);
+  const hasEmails = emails.length > 0;
+  setButtons(['btn-copy-page', 'btn-export-page-csv', 'btn-export-page-txt'], !hasEmails);
+}
+
+// ── All emails ────────────────────────────────────────────────────────────────
+
+let allEmails = [];
+
+async function loadAllEmails() {
+  const { [STORAGE_EMAILS]: stored = [] } = await chrome.storage.local.get(STORAGE_EMAILS);
+  allEmails = stored;
+  $('all-emails').value = allEmails.join('\n');
+  setCount('all-count', allEmails);
+  const hasEmails = allEmails.length > 0;
+  setButtons(['btn-copy-all', 'btn-export-all-csv', 'btn-export-all-txt', 'btn-clear-all'], !hasEmails);
+}
+
+// ── Button wiring ─────────────────────────────────────────────────────────────
+
+$('btn-copy-page').addEventListener('click', () => copyToClipboard(pageEmails.join('\n')));
+$('btn-export-page-txt').addEventListener('click', () => download(pageEmails.join('\r\n'), 'emails.txt', 'text/plain'));
+$('btn-export-page-csv').addEventListener('click', () => download(toCSV(pageEmails), 'emails.csv', 'text/csv'));
+
+$('btn-copy-all').addEventListener('click', () => copyToClipboard(allEmails.join('\n')));
+$('btn-export-all-txt').addEventListener('click', () => download(allEmails.join('\r\n'), 'emails-all.txt', 'text/plain'));
+$('btn-export-all-csv').addEventListener('click', () => download(toCSV(allEmails), 'emails-all.csv', 'text/csv'));
+
+$('btn-clear-all').addEventListener('click', async () => {
+  await chrome.storage.local.remove(STORAGE_EMAILS);
+  allEmails = [];
+  $('all-emails').value = '';
+  setCount('all-count', []);
+  setButtons(['btn-copy-all', 'btn-export-all-csv', 'btn-export-all-txt', 'btn-clear-all'], true);
+});
+
+// ── Collect toggle ────────────────────────────────────────────────────────────
+
+const chkCollect = $('chk-collect');
+
+chrome.storage.local.get(STORAGE_DISABLE_COLLECT, ({ [STORAGE_DISABLE_COLLECT]: disabled }) => {
+  chkCollect.checked = !disabled;
+});
+
+chkCollect.addEventListener('change', () => {
+  if (chkCollect.checked) {
+    chrome.storage.local.remove(STORAGE_DISABLE_COLLECT);
+  } else {
+    chrome.storage.local.set({ [STORAGE_DISABLE_COLLECT]: true });
+  }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+loadPageEmails();

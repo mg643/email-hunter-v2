@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email Hunter</title>
+  <link rel="stylesheet" href="css/popup.css" />
+</head>
+<body>
+
+  <header>
+    <img src="img/32.png" alt="Email Hunter" />
+    <h1>Email Hunter</h1>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="page" role="tab">This Page</button>
+    <button class="tab" data-tab="all" role="tab">All Pages</button>
+  </nav>
+
+  <!-- This Page tab -->
+  <section id="tab-page" class="tab-panel">
+    <div class="toolbar">
+      <span id="page-count" class="count">0 emails</span>
+      <div class="actions">
+        <button id="btn-copy-page" class="btn" disabled>Copy</button>
+        <button id="btn-export-page-csv" class="btn" disabled>CSV</button>
+        <button id="btn-export-page-txt" class="btn" disabled>TXT</button>
+      </div>
+    </div>
+    <textarea id="page-emails" readonly placeholder="No emails found on this page yet."></textarea>
+  </section>
+
+  <!-- All Pages tab -->
+  <section id="tab-all" class="tab-panel hidden">
+    <div class="toolbar">
+      <span id="all-count" class="count">0 emails</span>
+      <div class="actions">
+        <button id="btn-copy-all" class="btn" disabled>Copy</button>
+        <button id="btn-export-all-csv" class="btn" disabled>CSV</button>
+        <button id="btn-export-all-txt" class="btn" disabled>TXT</button>
+        <button id="btn-clear-all" class="btn btn-danger" disabled>Clear</button>
+      </div>
+    </div>
+    <textarea id="all-emails" readonly placeholder="No emails accumulated yet."></textarea>
+  </section>
+
+  <footer>
+    <label class="toggle-row">
+      <input type="checkbox" id="chk-collect" checked />
+      <span>Accumulate emails across pages</span>
+    </label>
+  </footer>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Email Hunter — Settings</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      color: #1a202c;
+      background: #f4f6fa;
+      padding: 32px;
+      max-width: 520px;
+    }
+    h1 { font-size: 18px; margin-bottom: 24px; }
+    .card {
+      background: #fff;
+      border: 1px solid #e2e6ef;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    h2 { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 12px; }
+    label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      cursor: pointer;
+      line-height: 1.5;
+    }
+    input[type="checkbox"] { accent-color: #2563eb; margin-top: 2px; flex-shrink: 0; }
+    .hint { font-size: 12px; color: #6b7280; margin-top: 4px; }
+    button {
+      margin-top: 8px;
+      padding: 6px 16px;
+      font-size: 13px;
+      border: 1px solid #e2e6ef;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #fff;
+    }
+    button:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+    #status { margin-top: 16px; font-size: 12px; color: #16a34a; min-height: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Email Hunter Settings</h1>
+
+  <div class="card">
+    <h2>Accumulation</h2>
+    <label>
+      <input type="checkbox" id="chk-collect" checked />
+      <div>
+        Keep emails from all pages
+        <div class="hint">When enabled, emails are stored across all sites you visit and accessible from the "All Pages" tab.</div>
+      </div>
+    </label>
+  </div>
+
+  <div class="card">
+    <h2>Data</h2>
+    <p class="hint" style="margin-bottom:10px">Clear all accumulated email addresses from storage.</p>
+    <button id="btn-clear">Clear all stored emails</button>
+  </div>
+
+  <div id="status"></div>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>
