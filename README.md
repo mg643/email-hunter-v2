@@ -30,7 +30,6 @@ A Chrome extension that automatically extracts email addresses from web pages as
 - Click **Clear** to wipe all stored emails
 
 ## File Structure
-
 email-hunter-v2/
 ├── manifest.json # Extension manifest (Manifest v3)
 ├── popup.html # Popup UI
@@ -43,21 +42,15 @@ email-hunter-v2/
 │ └── popup.css # Popup styles
 └── img/ # Extension icons (16–256px)
 
-
 ## Permissions
-
 | Permission | Purpose |
 |---|---|
 | `storage` | Persist collected emails across sessions |
 | `scripting` | Inject content script into pages |
 | `tabs` | Read current tab URL for per-page grouping |
 | `<all_urls>` | Run on any page |
-
 ## Privacy
-
 The extension operates entirely locally. No data is sent to any server; all collected emails stay in your browser's local storage.
-
 ## Requirements
-
 - Chrome 88+ (Manifest v3)
 - No build step required — load directly as an unpacked extension
