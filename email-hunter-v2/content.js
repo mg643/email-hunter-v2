@@ -1,6 +1,18 @@
 (() => {
   'use strict';
 
+  // ── Page domain ──────────────────────────────────────────────────────────────
+
+  const pageDomain = (() => {
+    const h = window.location.hostname;
+    return h.startsWith('www.') ? h.slice(4) : h;
+  })();
+
+  function matchesDomain(email) {
+    const d = email.slice(email.indexOf('@') + 1);
+    return d === pageDomain || d.endsWith('.' + pageDomain);
+  }
+
   // ── Filters ──────────────────────────────────────────────────────────────────
 
   const BLOCKED_PREFIXES = new Set([
@@ -51,14 +63,14 @@
 
   // ── Extractors ────────────────────────────────────────────────────────────────
 
-  function fromText(text, domainFilter) {
+  function fromText(text) {
     const found = new Set();
 
     // Standard regex pass
     for (const raw of (text.match(EMAIL_REGEX) || [])) {
       const e = cleanEmail(raw.toLowerCase().trim());
       if (!isValid(e)) continue;
-      if (domainFilter && !e.endsWith('@' + domainFilter) && !e.includes('.' + domainFilter)) continue;
+      if (!matchesDomain(e)) continue;
       found.add(e);
     }
 
@@ -68,7 +80,7 @@
     while ((m = OBFUSCATED_REGEX.exec(text)) !== null) {
       const e = `${m[1]}@${m[2]}.${m[3]}`.toLowerCase();
       if (!isValid(e)) continue;
-      if (domainFilter && !e.includes('@' + domainFilter)) continue;
+      if (!matchesDomain(e)) continue;
       found.add(e);
     }
 
@@ -83,7 +95,7 @@
         .split('?')[0]
         .trim()
         .toLowerCase();
-      if (email && isValid(email)) found.push(email);
+      if (email && isValid(email) && matchesDomain(email)) found.push(email);
     });
     return found;
   }
@@ -94,7 +106,7 @@
       try {
         for (const raw of (script.textContent.match(EMAIL_REGEX) || [])) {
           const e = raw.toLowerCase().trim();
-          if (isValid(e)) found.push(e);
+          if (isValid(e) && matchesDomain(e)) found.push(e);
         }
       } catch (_) {}
     });
@@ -105,14 +117,14 @@
     const found = [];
     document.querySelectorAll('[data-email]').forEach(el => {
       const e = el.getAttribute('data-email').toLowerCase().trim();
-      if (e && isValid(e)) found.push(e);
+      if (e && isValid(e) && matchesDomain(e)) found.push(e);
     });
     return found;
   }
 
-  function collectAll(domainFilter) {
+  function collectAll() {
     const found = new Set();
-    fromText(document.documentElement.innerHTML, domainFilter).forEach(e => found.add(e));
+    fromText(document.documentElement.innerHTML).forEach(e => found.add(e));
     fromMailtoLinks().forEach(e => found.add(e));
     fromJsonLd().forEach(e => found.add(e));
     fromDataAttributes().forEach(e => found.add(e));
@@ -126,7 +138,7 @@
   const observer = new MutationObserver(() => {
     clearTimeout(mutationTimer);
     mutationTimer = setTimeout(() => {
-      const emails = collectAll(null);
+      const emails = collectAll();
       if (emails.length > 0) {
         chrome.runtime.sendMessage({ method: 'storeEmails', emails }).catch(() => {});
       }
@@ -145,12 +157,12 @@
 
   chrome.runtime.onMessage.addListener((msg, _sender, respond) => {
     if (msg.method === 'getEmails') {
-      respond({ emails: collectAll(msg.domain || null) });
+      respond({ emails: collectAll() });
       return true;
     }
 
     if (msg.method === 'extractEmails') {
-      respond({ emails: fromText(msg.data, msg.domain || null) });
+      respond({ emails: fromText(msg.data) });
       return true;
     }
 
